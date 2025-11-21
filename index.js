@@ -4,6 +4,8 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// https://drive.google.com/file/d/1GKxOiSCuB9bnshFzyHghnaSHja5eJr0n/view
+
 // middleware 
 app.use(cors());
 app.use(express.json());
@@ -27,44 +29,61 @@ async function run() {
         await client.connect();
 
         const db = client.db('food_db');
-        const productsCollection = db.collection('products');
+        const foodsCollection = db.collection('foods');
+        const usersCollection = db.collection('users');
 
-        app.get('/products', async (req, res) => {
-            const cursor = productsCollection.find();
+        app.post('/users', async (req, res) => {
+            const newUser = req.body;
+            const email = req.body.email;
+            const query = { email: email }
+            const existingUser = await usersCollection.findOne(query);
+
+            if (existingUser) {
+                res.send({ message: 'user already exist. do not to try insert again' })
+            }
+            else {
+                const result = await usersCollection.insertOne(newUser);
+                res.send(result);
+            }
+        })
+
+        app.get('/foods', async (req, res) => {
+            const cursor = foodsCollection.find();
             const result = await cursor.toArray();
             res.send(result)
         })
 
-        app.get('/products/:id', async (req, res) => {
+        app.get('/foods/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId.id }
-            const result = await productsCollection.findOne((query));
+            const result = await foodsCollection.findOne((query));
             res.send(result)
         })
 
-        app.post('/products', async (req, res) => {
-            const newProduct = req.body;
-            const result = await productsCollection.insertOne(newProduct);
+        app.post('/foods', async (req, res) => {
+            const newFood = req.body;
+            const result = await foodsCollection.insertOne(newFood);
+            res.send(result);
         })
 
-        app.patch('/products/:id', async (req, res) => {
+        app.patch('/foods/:id', async (req, res) => {
             const id = req.params.id;
-            const updateProduct = req.body;
+            const updateFood = req.body;
             const query = { _id: new ObjectId(id) }
             const update = {
                 $set: {
-                    name: updateProduct.name,
-                    price: updateProduct.price
+                    name: updateFood.name,
+                    price: updateFood.price
                 }
             }
-            const result = await productsCollection.updateOne(query, update)
+            const result = await foodsCollection.updateOne(query, update)
             res.send(result)
         })
 
-        app.delete('/products/:id', async (req, res) => {
+        app.delete('/foods/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
-            const result = await productsCollection.deleteOne(query);
+            const result = await foodsCollection.deleteOne(query);
             res.send(result);
         })
 
